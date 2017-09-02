@@ -653,7 +653,7 @@
 
         <repository>
             <id>bluepay</id>
-            <url>http://192.168.4.216:8081/nexus/content/repositories/releases/</url>
+            <url>http://192.168.4.243:8081/nexus/content/repositories/releases/</url>
         </repository>
 
         <!--<snapshotRepository>-->

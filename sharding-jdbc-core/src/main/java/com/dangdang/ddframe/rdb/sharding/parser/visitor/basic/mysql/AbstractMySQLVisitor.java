@@ -26,6 +26,7 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlExportParameterVisitor;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.dangdang.ddframe.rdb.sharding.constants.DatabaseType;
 import com.dangdang.ddframe.rdb.sharding.parser.result.router.Condition.BinaryOperator;
@@ -43,7 +44,7 @@ import java.util.Collections;
  * 
  * @author zhangliang
  */
-public abstract class AbstractMySQLVisitor extends MySqlOutputVisitor implements SQLVisitor {
+public abstract class AbstractMySQLVisitor extends MySqlExportParameterVisitor implements SQLVisitor {
     
     private ParseContext parseContext;
     
