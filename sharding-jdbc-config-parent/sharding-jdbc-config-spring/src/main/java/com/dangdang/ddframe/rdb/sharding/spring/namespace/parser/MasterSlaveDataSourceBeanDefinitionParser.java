@@ -17,21 +17,24 @@
 
 package com.dangdang.ddframe.rdb.sharding.spring.namespace.parser;
 
+import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.MasterSlaveLoadBalanceStrategyType;
 import com.dangdang.ddframe.rdb.sharding.jdbc.core.datasource.MasterSlaveDataSource;
 import com.dangdang.ddframe.rdb.sharding.spring.namespace.constants.MasterSlaveDataSourceBeanDefinitionParserTag;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
-import org.springframework.beans.factory.support.ManagedList;
+import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.beans.factory.xml.AbstractBeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.w3c.dom.Element;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * 基于Spring命名空间的读写分离数据源解析器.
+ * Master-slave data source parser for spring namespace.
  * 
  * @author zhangliang
  */
@@ -43,8 +46,16 @@ public class MasterSlaveDataSourceBeanDefinitionParser extends AbstractBeanDefin
     //CHECKSTYLE:ON
         BeanDefinitionBuilder factory = BeanDefinitionBuilder.rootBeanDefinition(MasterSlaveDataSource.class);
         factory.addConstructorArgValue(parseId(element));
-        factory.addConstructorArgReference(parseMasterDataSourceRef(element));
+        String masterDataSourceName = parseMasterDataSourceRef(element);
+        factory.addConstructorArgValue(masterDataSourceName);
+        factory.addConstructorArgReference(masterDataSourceName);
         factory.addConstructorArgValue(parseSlaveDataSources(element, parserContext));
+        String strategyRef = parseStrategyRef(element);
+        if (!Strings.isNullOrEmpty(strategyRef)) {
+            factory.addConstructorArgReference(strategyRef);
+        } else {
+            factory.addConstructorArgValue(parseStrategyType(element));
+        }
         return factory.getBeanDefinition();
     }
     
@@ -56,12 +67,21 @@ public class MasterSlaveDataSourceBeanDefinitionParser extends AbstractBeanDefin
         return element.getAttribute(MasterSlaveDataSourceBeanDefinitionParserTag.MASTER_DATA_SOURCE_REF_ATTRIBUTE);
     }
     
-    private List<BeanDefinition> parseSlaveDataSources(final Element element, final ParserContext parserContext) {
+    private Map<String, BeanDefinition> parseSlaveDataSources(final Element element, final ParserContext parserContext) {
         List<String> slaveDataSources = Splitter.on(",").trimResults().splitToList(element.getAttribute(MasterSlaveDataSourceBeanDefinitionParserTag.SLAVE_DATA_SOURCES_REF_ATTRIBUTE));
-        List<BeanDefinition> result = new ManagedList<>(slaveDataSources.size());
+        Map<String, BeanDefinition> result = new ManagedMap<>(slaveDataSources.size());
         for (String each : slaveDataSources) {
-            result.add(parserContext.getRegistry().getBeanDefinition(each));
+            result.put(each, parserContext.getRegistry().getBeanDefinition(each));
         }
         return result;
+    }
+    
+    private String parseStrategyRef(final Element element) {
+        return element.getAttribute(MasterSlaveDataSourceBeanDefinitionParserTag.STRATEGY_REF_ATTRIBUTE);
+    }
+    
+    private MasterSlaveLoadBalanceStrategyType parseStrategyType(final Element element) {
+        String result = element.getAttribute(MasterSlaveDataSourceBeanDefinitionParserTag.STRATEGY_TYPE_ATTRIBUTE);
+        return Strings.isNullOrEmpty(result) ? MasterSlaveLoadBalanceStrategyType.getDefaultStrategyType() : MasterSlaveLoadBalanceStrategyType.valueOf(result);
     }
 }

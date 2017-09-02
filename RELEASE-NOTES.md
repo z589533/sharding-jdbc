@@ -1,3 +1,17 @@
+## 1.5.3
+
+### 功能提升
+
+1. [ISSUE #98](https://github.com/dangdangdotcom/sharding-jdbc/issues/98) 读写分离负载均衡策略支持配置
+1. [ISSUE #196](https://github.com/dangdangdotcom/sharding-jdbc/issues/196) 读写分离与分库分表配置独立
+
+### 缺陷修正
+
+1. [ISSUE #349](https://github.com/dangdangdotcom/sharding-jdbc/issues/349) ResultSet.wasNull功能不正确导致DB中的数字类型空值取出为零
+1. [ISSUE #351](https://github.com/dangdangdotcom/sharding-jdbc/issues/351) 包含在默认数据源但不在TableRule配置的表无法正确执行
+1. [ISSUE #353](https://github.com/dangdangdotcom/sharding-jdbc/issues/353) 在SQL的Where条件中兼容不是分片列的!=, !> 和 !< 操作符
+1. [ISSUE #354](https://github.com/dangdangdotcom/sharding-jdbc/issues/354) 在SQL的Where条件中兼容不是分片列的NOT操作符
+
 ## 1.5.2
 
 ### 里程碑
@@ -13,7 +27,7 @@
 
 1. [ISSUE #334](https://github.com/dangdangdotcom/sharding-jdbc/issues/334) 解析有函数的ORDER BY会将后面的ASC, DESC解析到OrderItem的name属性中
 1. [ISSUE #335](https://github.com/dangdangdotcom/sharding-jdbc/issues/339) 使用表全名关联的JOIN解析不正确
-1. [ISSUE #346](https://github.com/dangdangdotcom/sharding-jdbc/issues/346) DDL语句 DROP TABLE IF EXISTS `USER` 解析表明错误
+1. [ISSUE #346](https://github.com/dangdangdotcom/sharding-jdbc/issues/346) DDL语句 DROP TABLE IF EXISTS USER 解析表明错误
 
 ## 1.5.1
 

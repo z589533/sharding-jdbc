@@ -17,27 +17,30 @@
 
 package com.dangdang.ddframe.rdb.sharding.jdbc.core.datasource;
 
-import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.RoundRobinSlaveLoadBalanceStrategy;
-import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.SlaveLoadBalanceStrategy;
+import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.MasterSlaveLoadBalanceStrategy;
+import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.MasterSlaveLoadBalanceStrategyType;
 import com.dangdang.ddframe.rdb.sharding.constant.SQLType;
 import com.dangdang.ddframe.rdb.sharding.hint.HintManagerHolder;
 import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.AbstractDataSourceAdapter;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.connection.MasterSlaveConnection;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * Database that support master-slave.
  *
  * @author zhangliang
  */
-@RequiredArgsConstructor
 public final class MasterSlaveDataSource extends AbstractDataSourceAdapter {
     
     private static final ThreadLocal<Boolean> DML_FLAG = new ThreadLocal<Boolean>() {
@@ -50,13 +53,48 @@ public final class MasterSlaveDataSource extends AbstractDataSourceAdapter {
     
     private final String name;
     
+    private final String masterDataSourceName;
+    
     @Getter
     private final DataSource masterDataSource;
     
     @Getter
-    private final List<DataSource> slaveDataSources;
+    private final Map<String, DataSource> slaveDataSources;
     
-    private final SlaveLoadBalanceStrategy slaveLoadBalanceStrategy = new RoundRobinSlaveLoadBalanceStrategy();
+    private final MasterSlaveLoadBalanceStrategy masterSlaveLoadBalanceStrategy;
+    
+    public MasterSlaveDataSource(final String name, final String masterDataSourceName, final DataSource masterDataSource,
+                                 final Map<String, DataSource> slaveDataSources, final MasterSlaveLoadBalanceStrategyType strategyType) throws SQLException {
+        this(name, masterDataSourceName, masterDataSource, slaveDataSources, strategyType.getStrategy());
+    }
+    
+    public MasterSlaveDataSource(final String name, final String masterDataSourceName, final DataSource masterDataSource, 
+                                 final Map<String, DataSource> slaveDataSources, final MasterSlaveLoadBalanceStrategy masterSlaveLoadBalanceStrategy) throws SQLException {
+        super(getAllDataSources(masterDataSource, slaveDataSources.values()));
+        this.name = name;
+        this.masterDataSourceName = masterDataSourceName;
+        this.masterDataSource = masterDataSource;
+        this.slaveDataSources = slaveDataSources;
+        this.masterSlaveLoadBalanceStrategy = masterSlaveLoadBalanceStrategy;
+    }
+    
+    private static Collection<DataSource> getAllDataSources(final DataSource masterDataSource, final Collection<DataSource> slaveDataSources) {
+        Collection<DataSource> result = new LinkedList<>(slaveDataSources);
+        result.add(masterDataSource);
+        return result;
+    }
+    
+    /**
+     * Get map of all actual data source name and all actual data sources.
+     *
+     * @return map of all actual data source name and all actual data sources
+     */
+    public Map<String, DataSource> getAllDataSources() {
+        Map<String, DataSource> result = new HashMap<>(slaveDataSources.size() + 1, 1);
+        result.put(masterDataSourceName, masterDataSource);
+        result.putAll(slaveDataSources);
+        return result;
+    }
     
     /**
      * Get data source name from master-slave data source.
@@ -82,49 +120,31 @@ public final class MasterSlaveDataSource extends AbstractDataSourceAdapter {
     }
     
     /**
+     * reset DML flag.
+     */
+    public static void resetDMLFlag() {
+        DML_FLAG.remove();
+    }
+    
+    /**
      * Get data source from master-slave data source.
      *
      * @param sqlType SQL type
      * @return data source from master-slave data source
      */
-    public DataSource getDataSource(final SQLType sqlType) {
+    public NamedDataSource getDataSource(final SQLType sqlType) {
         if (isMasterRoute(sqlType)) {
             DML_FLAG.set(true);
-            return masterDataSource;
+            return new NamedDataSource(masterDataSourceName, masterDataSource);
         }
-        return slaveLoadBalanceStrategy.getDataSource(name, slaveDataSources);
-    }
-    
-    /**
-     * Get database product name.
-     * 
-     * @return database product name
-     * @throws SQLException SQL exception
-     */
-    public String getDatabaseProductName() throws SQLException {
-        String result;
-        try (Connection masterConnection = masterDataSource.getConnection()) {
-            result = masterConnection.getMetaData().getDatabaseProductName();
-        }
-        for (DataSource each : slaveDataSources) {
-            String slaveDatabaseProductName;
-            try (Connection slaveConnection = each.getConnection()) {
-                slaveDatabaseProductName = slaveConnection.getMetaData().getDatabaseProductName();    
-            }
-            Preconditions.checkState(result.equals(slaveDatabaseProductName), String.format("Database type inconsistent with '%s' and '%s'", result, slaveDatabaseProductName));
-        }
-        return result;
+        String selectedSourceName = masterSlaveLoadBalanceStrategy.getDataSource(name, masterDataSourceName, new ArrayList<>(slaveDataSources.keySet()));
+        DataSource result = selectedSourceName.equals(masterDataSourceName) ? masterDataSource : slaveDataSources.get(selectedSourceName);
+        Preconditions.checkNotNull(result, "");
+        return new NamedDataSource(selectedSourceName, result);
     }
     
     @Override
     public Connection getConnection() throws SQLException {
-        throw new UnsupportedOperationException("Master slave data source cannot support get connection directly.");
-    }
-    
-    /**
-     * reset DML flag.
-     */
-    public static void resetDMLFlag() {
-        DML_FLAG.remove();
+        return new MasterSlaveConnection(this);
     }
 }

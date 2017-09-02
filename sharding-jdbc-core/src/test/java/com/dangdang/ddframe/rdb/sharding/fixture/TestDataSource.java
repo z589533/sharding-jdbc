@@ -19,27 +19,47 @@ package com.dangdang.ddframe.rdb.sharding.fixture;
 
 import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.AbstractDataSourceAdapter;
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.mockito.Mockito;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.Collections;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
-@RequiredArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@Setter
 public final class TestDataSource extends AbstractDataSourceAdapter {
     
     private final String name;
     
-    @Setter
     private boolean throwExceptionWhenClosing;
+    
+    public TestDataSource(final String name) throws SQLException {
+        super(Collections.singletonList(getDataSource()));
+        this.name = name;
+    }
+    
+    private static DataSource getDataSource() throws SQLException {
+        DataSource result = Mockito.mock(DataSource.class);
+        Connection connection = Mockito.mock(Connection.class);
+        DatabaseMetaData metaData = Mockito.mock(DatabaseMetaData.class);
+        when(metaData.getDatabaseProductName()).thenReturn("H2");
+        when(connection.getMetaData()).thenReturn(metaData);
+        when(result.getConnection()).thenReturn(connection);
+        return result;
+    }
     
     @Override
     public Connection getConnection() throws SQLException {
         Connection result = Mockito.mock(Connection.class);
+        DatabaseMetaData metaData = Mockito.mock(DatabaseMetaData.class);
+        when(metaData.getDatabaseProductName()).thenReturn("H2");
+        when(result.getMetaData()).thenReturn(metaData);
         if (throwExceptionWhenClosing) {
             doThrow(SQLException.class).when(result).close();
         }

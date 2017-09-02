@@ -67,7 +67,7 @@ defaultDatabaseStrategy:
   algorithmClassName: com.dangdang.ddframe.rdb.sharding.api.strategy.database.NoneDatabaseShardingAlgorithm
 
 props:
-  metrics.enable: false
+  sql.show: false
   
 ```
 
@@ -111,13 +111,8 @@ defaultTableStrategy: 默认数据表分片策略
   algorithmExpression: 分表算法表达式，与algorithmClassName出现一个即可
 
 props: 属性配置(可选)
-    metrics.enable: 是否开启度量采集，默认值: false
     sql.show: 是否开启SQL显示，默认值: false
-    metrics.millisecond.period: 度量输出周期，单位: 毫秒，默认值: 30000毫秒
-    
-    executor.min.idle.size: 最小空闲工作线程数量，默认值: 0
-    executor.max.size: 最大工作线程数量，默认值: CPU核数乘2
-    executor.max.idle.timeout.millisecond: 工作线程空闲时超时时间，单位: 毫秒，默认值: 60000毫秒
+    executor.size: 工作线程数量，默认值: CPU核数
 ```
 
 #### YAML格式特别说明
@@ -186,7 +181,7 @@ props: 属性配置(可选)
             <rdb:default-database-strategy sharding-columns="none" algorithm-class="com.dangdang.ddframe.rdb.sharding.api.strategy.database.NoneDatabaseShardingAlgorithm"/>
         </rdb:sharding-rule>
         <rdb:props>
-            <prop key="metrics.enable">true</prop>
+            <prop key="sql.show">true</prop>
         </rdb:props>
     </rdb:data-source>
 </beans>
@@ -201,10 +196,10 @@ props: 属性配置(可选)
 | ----------------------------- | ------------ |  --------- | ------ | -------------- |
 | id                            | 属性         |  String     |   是   | Spring Bean ID |
 | sharding-rule                 | 标签         |   -         |   是   | 分片规则        |
-| binding-table-rules?        | 标签         |   -         |   是   | 绑定表规则       |
-| default-database-strategy?  | 标签         |   -         |   是   | 默认分库策略     |
-| default-table-strategy?     | 标签         |   -         |   是   | 默认分表策略     |
-| props?                      | 标签         |   -         |   是   | 相关属性配置     |
+| binding-table-rules?          | 标签         |   -         |   否   | 绑定表规则       |
+| default-database-strategy?    | 标签         |   -         |   否   | 默认分库策略     |
+| default-table-strategy?       | 标签         |   -         |   否   | 默认分表策略     |
+| props?                        | 标签         |   -         |   否   | 相关属性配置     |
 
 #### \<rdb:sharding-rule/>
 
@@ -218,7 +213,7 @@ props: 属性配置(可选)
 
 | *名称*                         | *类型*      | *数据类型*  |  *必填* | *说明*  |
 | ----------------------------- | ----------- | ---------- | ------ | ------- |
-| table-rule+                 | 标签         |   -         |   是  | 分片规则 |
+| table-rule+                   | 标签         |   -        |   是  | 分片规则 |
 
 #### \<rdb:table-rule/>
 
@@ -227,9 +222,9 @@ props: 属性配置(可选)
 | logic-table                   | 属性         |  String     |   是   | 逻辑表名 |
 | dynamic                       | 属性         |  boolean    |   否   | 是否动态表 |
 | actual-tables                 | 属性         |  String     |   否   | 真实表名，多个表以逗号分隔，支持inline表达式，指定数据源需要加前缀，不加前缀为默认数据源 指定数据源需要加前缀，不加前缀为默认数据源。不填写表示为只分库不分表或动态表(需要配置dynamic=true) |
-| data-source-names             | 属性         |  String     |   否   | 数据源名称，多个数据源用逗号分隔，支持inline表达式。不填写表示使用全部数据源                |
-| database-strategy             | 属性         |  String     |   否   | 分库策略，对应<rdb:strategy>中分库策略id, 如果不填需配置<rdb:default-database-strategy/> |
-| table-strategy                | 属性         |  String     |   否   | 分表策略，对应<rdb:strategy>中分表策略id, 如果不填需配置<rdb:default-table-strategy/>    |
+| data-source-names             | 属性         |  String     |   否   | 数据源名称，多个数据源用逗号分隔，支持inline表达式。不填写表示使用全部数据源                    |
+| database-strategy             | 属性         |  String     |   否   | 分库策略，对应\<rdb:strategy>中分库策略id, 如果不填需配置\<rdb:default-database-strategy/> |
+| table-strategy                | 属性         |  String     |   否   | 分表策略，对应\<rdb:strategy>中分表策略id, 如果不填需配置\<rdb:default-table-strategy/>    |
 
 #### \<rdb:binding-table-rules/>
 
@@ -274,12 +269,20 @@ props: 属性配置(可选)
 
 | *名称*                                | *类型*       | *数据类型*  | *必填* | *说明*                              |
 | ------------------------------------ | ------------ | ---------- | ----- | ----------------------------------- |
-| metrics.enable                       | 属性         |  boolean   |   否   | 是否开启度量采集，默认为false不开启     |
 | sql.show                             | 属性         |  boolean   |   是   | 是否开启SQL显示，默认为false不开启     |
-| metrics.millisecond.period           | 属性         |  String    |   否   | 度量输出周期，单位为毫秒               |
-| executor.min.idle.size               | 属性         |  int       |   否   | 最小空闲工作线程数量                  |
-| executor.max.size                    | 属性         |  int       |   否   | 最大工作线程数量                      |
-| executor.max.idle.timeout.millisecond| 属性         |  int       |   否   | 工作线程空闲时超时时间，默认以毫秒为单位 |
+| executor.size                        | 属性         |  int       |   否   | 最大工作线程数量                      |
+
+#### \<rdb:master-slave-data-source/\>
+
+定义sharding-jdbc读写分离的数据源
+
+| *名称*                         | *类型*       | *数据类型*  |  *必填* | *说明*                                   |
+| ----------------------------- | ------------ |  --------- | ------ | ---------------------------------------- |
+| id                            | 属性         |  String     |   是   | Spring Bean ID                           |
+| master-data-source-ref        | 标签         |   -         |   是   | 主库数据源Bean ID                         |
+| slave-data-sources-ref        | 标签         |   -         |   是   | 从库数据源Bean列表，多个Bean以逗号分隔       |
+| strategy-ref?                 | 标签         |   -         |   否   | 主从库复杂策略Bean ID，可以使用自定义复杂策略 |
+| strategy-type?                | 标签         |  String     |   否   | 主从库复杂策略类型<br />可选值：ROUND_ROBIN, RANDOM<br />默认值：ROUND_ROBIN |
 
 #### Spring格式特别说明
 如需使用inline表达式，需配置ignore-unresolvable为true，否则placeholder会把inline表达式当成属性key值导致出错. 

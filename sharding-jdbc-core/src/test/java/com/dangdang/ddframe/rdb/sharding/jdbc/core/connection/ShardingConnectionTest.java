@@ -20,6 +20,7 @@ package com.dangdang.ddframe.rdb.sharding.jdbc.core.connection;
 import com.dangdang.ddframe.rdb.sharding.api.rule.DataSourceRule;
 import com.dangdang.ddframe.rdb.sharding.api.rule.ShardingRule;
 import com.dangdang.ddframe.rdb.sharding.api.rule.TableRule;
+import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.RoundRobinMasterSlaveLoadBalanceStrategy;
 import com.dangdang.ddframe.rdb.sharding.constant.SQLType;
 import com.dangdang.ddframe.rdb.sharding.fixture.TestDataSource;
 import com.dangdang.ddframe.rdb.sharding.jdbc.core.ShardingContext;
@@ -41,25 +42,26 @@ import static org.junit.Assert.assertSame;
 
 public final class ShardingConnectionTest {
     
-    private static final DataSource MASTER_DATA_SOURCE = new TestDataSource("test_ds_master");
-    
-    private static final DataSource SLAVE_DATA_SOURCE = new TestDataSource("test_ds_slave");
-    
-    private static final MasterSlaveDataSource MASTER_SLAVE_DATA_SOURCE = new MasterSlaveDataSource("test_ds", MASTER_DATA_SOURCE, Collections.singletonList(SLAVE_DATA_SOURCE));
+    private static MasterSlaveDataSource masterSlaveDataSource;
     
     private static final String DS_NAME = "default";
     
     private ShardingConnection connection;
     
     @BeforeClass
-    public static void init() {
-        ((TestDataSource) SLAVE_DATA_SOURCE).setThrowExceptionWhenClosing(true);
+    public static void init() throws SQLException {
+        DataSource masterDataSource = new TestDataSource("test_ds_master");
+        DataSource slaveDataSource = new TestDataSource("test_ds_slave");
+        Map<String, DataSource> slaveDataSourceMap = new HashMap<>(1, 1);
+        slaveDataSourceMap.put("test_ds_slave", slaveDataSource);
+        masterSlaveDataSource = new MasterSlaveDataSource("test_ds", "test_ds_master", masterDataSource, slaveDataSourceMap, new RoundRobinMasterSlaveLoadBalanceStrategy());
+        ((TestDataSource) slaveDataSource).setThrowExceptionWhenClosing(true);
     }
     
     @Before
     public void setUp() {
         Map<String, DataSource> dataSourceMap = new HashMap<>(1);
-        dataSourceMap.put(DS_NAME, MASTER_SLAVE_DATA_SOURCE);
+        dataSourceMap.put(DS_NAME, masterSlaveDataSource);
         DataSourceRule dataSourceRule = new DataSourceRule(dataSourceMap);
         ShardingRule rule = new ShardingRule.ShardingRuleBuilder().dataSourceRule(dataSourceRule)
                 .tableRules(Collections.singleton(new  TableRule.TableRuleBuilder("test").dataSourceRule(dataSourceRule).build())).build();

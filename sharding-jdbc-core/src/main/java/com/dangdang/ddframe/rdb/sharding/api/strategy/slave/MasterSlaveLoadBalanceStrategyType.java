@@ -17,22 +17,29 @@
 
 package com.dangdang.ddframe.rdb.sharding.api.strategy.slave;
 
-import javax.sql.DataSource;
-import java.util.List;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
- * Slave database load-balance strategy.
+ * Master-slave database load-balance strategy type.
  *
  * @author zhangliang
  */
-public interface SlaveLoadBalanceStrategy {
+@RequiredArgsConstructor
+@Getter
+public enum MasterSlaveLoadBalanceStrategyType {
+    
+    ROUND_ROBIN(new RoundRobinMasterSlaveLoadBalanceStrategy()),
+    RANDOM(new RandomMasterSlaveLoadBalanceStrategy());
+    
+    private final MasterSlaveLoadBalanceStrategy strategy;
     
     /**
-     * Get data source.
+     * Get default master-slave database load-balance strategy type.
      * 
-     * @param name master-slave logic data source name
-     * @param slaveDataSources slave data sources's names
-     * @return selected slave data source
+     * @return default master-slave database load-balance strategy type
      */
-    DataSource getDataSource(String name, List<DataSource> slaveDataSources);
+    public static MasterSlaveLoadBalanceStrategyType getDefaultStrategyType() {
+        return ROUND_ROBIN;
+    }
 }

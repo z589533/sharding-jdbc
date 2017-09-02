@@ -15,14 +15,20 @@
  * </p>
  */
 
-package com.dangdang.ddframe.rdb.sharding.metrics;
+package com.dangdang.ddframe.rdb.sharding.api.strategy.slave;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.List;
+import java.util.Random;
 
-@RunWith(Suite.class)
-@Suite.SuiteClasses(
-    MetricsContextTest.class
-    )
-public class AllMetricsTests {
+/**
+ * Random slave database load-balance strategy.
+ *
+ * @author zhangliang
+ */
+public final class RandomMasterSlaveLoadBalanceStrategy implements MasterSlaveLoadBalanceStrategy {
+    
+    @Override
+    public String getDataSource(final String name, final String masterDataSourceName, final List<String> slaveDataSourceNames) {
+        return slaveDataSourceNames.get(new Random().nextInt(slaveDataSourceNames.size()));
+    }
 }

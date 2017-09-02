@@ -18,7 +18,6 @@
 package com.dangdang.ddframe.rdb.sharding.jdbc.adapter;
 
 import com.dangdang.ddframe.rdb.sharding.jdbc.unsupported.AbstractUnsupportedOperationConnection;
-import com.dangdang.ddframe.rdb.sharding.metrics.MetricsContext;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -42,7 +41,7 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     
     private int transactionIsolation = TRANSACTION_READ_UNCOMMITTED;
     
-    protected abstract Collection<Connection> getConnections();
+    protected abstract Collection<Connection> getCachedConnections() throws SQLException;
     
     @Override
     public final boolean getAutoCommit() throws SQLException {
@@ -52,11 +51,11 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     @Override
     public final void setAutoCommit(final boolean autoCommit) throws SQLException {
         this.autoCommit = autoCommit;
-        if (getConnections().isEmpty()) {
+        if (getCachedConnections().isEmpty()) {
             recordMethodInvocation(Connection.class, "setAutoCommit", new Class[] {boolean.class}, new Object[] {autoCommit});
             return;
         }
-        for (Connection each : getConnections()) {
+        for (Connection each : getCachedConnections()) {
             each.setAutoCommit(autoCommit);
         }
     }
@@ -64,7 +63,7 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     @Override
     public final void commit() throws SQLException {
         Collection<SQLException> exceptions = new LinkedList<>();
-        for (Connection each : getConnections()) {
+        for (Connection each : getCachedConnections()) {
             try {
                 each.commit();
             } catch (final SQLException ex) {
@@ -77,7 +76,7 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     @Override
     public final void rollback() throws SQLException {
         Collection<SQLException> exceptions = new LinkedList<>();
-        for (Connection each : getConnections()) {
+        for (Connection each : getCachedConnections()) {
             try {
                 each.rollback();
             } catch (final SQLException ex) {
@@ -90,9 +89,8 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     @Override
     public void close() throws SQLException {
         closed = true;
-        MetricsContext.clear();
         Collection<SQLException> exceptions = new LinkedList<>();
-        for (Connection each : getConnections()) {
+        for (Connection each : getCachedConnections()) {
             try {
                 each.close();
             } catch (final SQLException ex) {
@@ -115,11 +113,11 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     @Override
     public final void setReadOnly(final boolean readOnly) throws SQLException {
         this.readOnly = readOnly;
-        if (getConnections().isEmpty()) {
+        if (getCachedConnections().isEmpty()) {
             recordMethodInvocation(Connection.class, "setReadOnly", new Class[] {boolean.class}, new Object[] {readOnly});
             return;
         }
-        for (Connection each : getConnections()) {
+        for (Connection each : getCachedConnections()) {
             each.setReadOnly(readOnly);
         }
     }
@@ -132,16 +130,16 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     @Override
     public final void setTransactionIsolation(final int level) throws SQLException {
         transactionIsolation = level;
-        if (getConnections().isEmpty()) {
+        if (getCachedConnections().isEmpty()) {
             recordMethodInvocation(Connection.class, "setTransactionIsolation", new Class[] {int.class}, new Object[] {level});
             return;
         }
-        for (Connection each : getConnections()) {
+        for (Connection each : getCachedConnections()) {
             each.setTransactionIsolation(level);
         }
     }
     
-    // -------以下代码与MySQL实现保持一致.-------
+    // ------- Consist with MySQL driver implementation -------
     
     @Override
     public SQLWarning getWarnings() throws SQLException {

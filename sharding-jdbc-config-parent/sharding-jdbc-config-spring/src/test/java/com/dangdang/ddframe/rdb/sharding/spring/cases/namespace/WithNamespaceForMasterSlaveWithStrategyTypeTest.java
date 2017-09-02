@@ -4,9 +4,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,23 +17,18 @@
 
 package com.dangdang.ddframe.rdb.sharding.spring.cases.namespace;
 
-import com.dangdang.ddframe.rdb.sharding.metrics.MetricsContext;
 import com.dangdang.ddframe.rdb.sharding.spring.AbstractShardingBothDataBasesAndTablesSpringDBUnitTest;
-import org.junit.Test;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
-
-@ContextConfiguration(locations = "classpath:META-INF/rdb/namespace/withNamespaceAlgorithmClassAndProps.xml")
-public final class WithNamespaceAlgorithmClassAndPropsTest extends AbstractShardingBothDataBasesAndTablesSpringDBUnitTest {
+@ContextConfiguration(locations = "classpath:META-INF/rdb/namespace/withNamespaceForMasterSlaveWithStrategyType.xml")
+public final class WithNamespaceForMasterSlaveWithStrategyTypeTest extends AbstractShardingBothDataBasesAndTablesSpringDBUnitTest {
     
-    @Test
-    public void testMetricsContextWhenEnable() throws SQLException {
-        try (Connection connection = getShardingDataSource().getConnection()) {
-            assertNotNull(MetricsContext.start("name"));
-        }
+    @Override
+    protected List<String> getSchemaFiles() {
+        return Arrays.asList("schema/dbtbl_0_master.sql", "schema/dbtbl_0_slave_0.sql", "schema/dbtbl_0_slave_1.sql",
+                "schema/dbtbl_1_master.sql", "schema/dbtbl_1_slave_0.sql", "schema/dbtbl_1_slave_1.sql");
     }
 }

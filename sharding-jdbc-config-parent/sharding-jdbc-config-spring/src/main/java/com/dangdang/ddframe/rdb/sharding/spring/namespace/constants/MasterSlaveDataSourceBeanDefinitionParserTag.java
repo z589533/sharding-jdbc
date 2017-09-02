@@ -21,7 +21,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 /**
- * 读写分离解析标签.
+ * Master-slave data source parser tag constants.
  * 
  * @author zhangliang
  */
@@ -31,4 +31,8 @@ public final class MasterSlaveDataSourceBeanDefinitionParserTag {
     public static final String MASTER_DATA_SOURCE_REF_ATTRIBUTE = "master-data-source-ref";
     
     public static final String SLAVE_DATA_SOURCES_REF_ATTRIBUTE = "slave-data-sources-ref";
+    
+    public static final String STRATEGY_REF_ATTRIBUTE = "strategy-ref";
+    
+    public static final String STRATEGY_TYPE_ATTRIBUTE = "strategy-type";
 }

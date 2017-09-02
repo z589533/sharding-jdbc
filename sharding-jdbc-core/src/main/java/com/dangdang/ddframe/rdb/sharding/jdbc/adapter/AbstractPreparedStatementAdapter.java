@@ -19,7 +19,6 @@ package com.dangdang.ddframe.rdb.sharding.jdbc.adapter;
 
 import com.dangdang.ddframe.rdb.sharding.exception.ShardingJdbcException;
 import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.invocation.SetParameterMethodInvocation;
-import com.dangdang.ddframe.rdb.sharding.jdbc.core.connection.ShardingConnection;
 import com.dangdang.ddframe.rdb.sharding.jdbc.unsupported.AbstractUnsupportedOperationPreparedStatement;
 import lombok.Getter;
 
@@ -52,10 +51,6 @@ public abstract class AbstractPreparedStatementAdapter extends AbstractUnsupport
     
     @Getter
     private final List<Object> parameters = new ArrayList<>();
-    
-    protected AbstractPreparedStatementAdapter(final ShardingConnection shardingConnection, final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability) {
-        super(shardingConnection, resultSetType, resultSetConcurrency, resultSetHoldability);
-    }
     
     @Override
     public final void setNull(final int parameterIndex, final int sqlType) throws SQLException {

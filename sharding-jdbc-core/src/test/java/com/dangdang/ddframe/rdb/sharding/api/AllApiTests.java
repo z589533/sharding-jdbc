@@ -26,7 +26,8 @@ import com.dangdang.ddframe.rdb.sharding.api.rule.TableRuleTest;
 import com.dangdang.ddframe.rdb.sharding.api.strategy.common.ShardingStrategyTest;
 import com.dangdang.ddframe.rdb.sharding.api.strategy.database.DatabaseShardingStrategyTest;
 import com.dangdang.ddframe.rdb.sharding.api.strategy.database.NoneDatabaseShardingAlgorithmTest;
-import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.RoundRobinSlaveLoadBalanceStrategyTest;
+import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.RandomMasterSlaveLoadBalanceStrategyTest;
+import com.dangdang.ddframe.rdb.sharding.api.strategy.slave.RoundRobinMasterSlaveLoadBalanceStrategyTest;
 import com.dangdang.ddframe.rdb.sharding.api.strategy.table.NoneTableShardingAlgorithmTest;
 import com.dangdang.ddframe.rdb.sharding.api.strategy.table.TableShardingStrategyTest;
 import com.dangdang.ddframe.rdb.sharding.config.ShardingPropertiesConstantTest;
@@ -36,24 +37,25 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    ShardingDataSourceFactoryTest.class, 
-    ShardingPropertiesTest.class, 
-    ShardingPropertiesConstantTest.class, 
-    ShardingValueTest.class, 
-    DataSourceRuleTest.class, 
-    ShardingRuleTest.class, 
-    TableRuleTest.class, 
-    DataNodeTest.class, 
-    DynamicDataNodeTest.class, 
-    BindingTableRuleTest.class, 
-    ShardingStrategyTest.class, 
-    DatabaseShardingStrategyTest.class, 
-    NoneDatabaseShardingAlgorithmTest.class, 
-    TableShardingStrategyTest.class, 
-    NoneTableShardingAlgorithmTest.class, 
-    HintManagerTest.class, 
-    MasterSlaveDataSourceFactoryTest.class, 
-    RoundRobinSlaveLoadBalanceStrategyTest.class
+        ShardingDataSourceFactoryTest.class, 
+        ShardingPropertiesTest.class, 
+        ShardingPropertiesConstantTest.class, 
+        ShardingValueTest.class, 
+        DataSourceRuleTest.class, 
+        ShardingRuleTest.class, 
+        TableRuleTest.class, 
+        DataNodeTest.class, 
+        DynamicDataNodeTest.class, 
+        BindingTableRuleTest.class, 
+        ShardingStrategyTest.class, 
+        DatabaseShardingStrategyTest.class, 
+        NoneDatabaseShardingAlgorithmTest.class, 
+        TableShardingStrategyTest.class, 
+        NoneTableShardingAlgorithmTest.class, 
+        HintManagerTest.class, 
+        MasterSlaveDataSourceFactoryTest.class, 
+        RoundRobinMasterSlaveLoadBalanceStrategyTest.class,
+        RandomMasterSlaveLoadBalanceStrategyTest.class
     })
 public class AllApiTests {
 }
