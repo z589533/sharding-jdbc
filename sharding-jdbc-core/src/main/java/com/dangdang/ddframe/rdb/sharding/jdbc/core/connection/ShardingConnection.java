@@ -137,7 +137,13 @@ public final class ShardingConnection extends AbstractConnectionAdapter {
     public DatabaseMetaData getMetaData() throws SQLException {
         return getConnection(shardingContext.getShardingRule().getDataSourceRule().getDataSourceNames().iterator().next(), SQLType.DQL).getMetaData();
     }
-    
+
+
+    @Override
+    public String getCatalog() throws SQLException {
+        return getConnection(shardingContext.getShardingRule().getDataSourceRule().getDataSourceNames().iterator().next(), SQLType.DQL).getCatalog();
+    }
+
     @Override
     public PreparedStatement prepareStatement(final String sql) throws SQLException {
         return new ShardingPreparedStatement(this, sql);

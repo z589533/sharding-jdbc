@@ -79,7 +79,6 @@ public final class HintManager implements AutoCloseable {
     /**
      * Add sharding value for database.
      * 
-     * <p>The sharding operator is {@code =}/p>
      *
      * @param logicTable logic table name
      * @param shardingColumn sharding column name

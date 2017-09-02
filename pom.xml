@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dangdang</groupId>
     <artifactId>sharding-jdbc</artifactId>
-    <version>1.5.2</version>
+    <version>1.5.2-SNAPSHOTS</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     
@@ -13,7 +13,7 @@
     </modules>
     
     <properties>
-        <java.version>1.7</java.version>
+        <java.version>1.8</java.version>
         <maven.version.range>[3.0.4,)</maven.version.range>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.locale>zh_CN</project.build.locale>
@@ -29,7 +29,7 @@
         <groovy.version>2.4.5</groovy.version>
         <snakeyaml.version>1.16</snakeyaml.version>
         <springframework.version>4.1.1.RELEASE</springframework.version>
-        <mysql-connector-java.version>5.1.30</mysql-connector-java.version>
+        <mysql-connector-java.version>5.1.42</mysql-connector-java.version>
         <h2.version>1.4.196</h2.version>
         <postgresql.version>9.1-901-1.jdbc4</postgresql.version>
         <mssql.version>6.1.7.jre7-preview</mssql.version>
@@ -560,12 +560,12 @@
     
     <distributionManagement>
         <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>bluepay</id>
+            <url>http://192.168.4.243:8081/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>
         <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+            <id>bluepay</id>
+            <url>http://192.168.4.243:8081/nexus/content/repositories/releases/</url>
         </repository>
     </distributionManagement>
 </project>
