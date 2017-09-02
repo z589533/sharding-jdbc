@@ -17,10 +17,10 @@
 
 package com.dangdang.ddframe.rdb.sharding.api.strategy.database;
 
-import com.dangdang.ddframe.rdb.sharding.router.strategy.NoneKeyShardingAlgorithm;
+import com.dangdang.ddframe.rdb.sharding.routing.strategy.NoneKeyShardingAlgorithm;
 
 /**
- * 没有分片键的数据库分片算法.
+ * Database sharding algorithm for none sharding keys interface.
  * 
  * @author gaohongtao
  */

@@ -3,7 +3,7 @@ toc = true
 date = "2016-12-06T22:38:50+08:00"
 title = "快速入门"
 weight = 1
-prev = "/01-start/index"
+prev = "/01-start"
 next = "/01-start/faq"
 
 +++
@@ -115,4 +115,4 @@ try (
     </rdb:data-source>
 </beans>
 ```
->详细的规则配置请参考[配置指南](/02-guide/configuration)
+>详细的规则配置请参考[配置手册](/02-guide/configuration)

@@ -17,16 +17,16 @@
 
 package com.dangdang.ddframe.rdb.sharding.config;
 
+import com.dangdang.ddframe.rdb.sharding.util.StringUtil;
+import com.google.common.base.Joiner;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.Set;
 
-import com.dangdang.ddframe.rdb.sharding.util.StringUtil;
-import com.google.common.base.Joiner;
-
 /**
- * Sharding-JDBC的配置属性.
+ * The properties for Sharding-JDBC configuration.
  *
  * @author gaohongtao
  * @author zhangliang
@@ -72,11 +72,11 @@ public final class ShardingProperties {
     }
     
     /**
-     * 获取配置项属性值.
+     * Get property value.
      * 
-     * @param shardingPropertiesConstant 配置项常量
-     * @param <T> 返回值类型
-     * @return 配置项属性值
+     * @param shardingPropertiesConstant sharding properties constant
+     * @param <T> class type of return value
+     * @return property value
      */
     @SuppressWarnings("unchecked")
     public <T> T getValue(final ShardingPropertiesConstant shardingPropertiesConstant) {

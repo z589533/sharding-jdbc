@@ -17,8 +17,8 @@
 
 package com.dangdang.ddframe.rdb.transaction.soft.api.config;
 
-import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingDataSource;
-import com.dangdang.ddframe.rdb.sharding.parser.result.router.SQLStatementType;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.datasource.ShardingDataSource;
+import com.dangdang.ddframe.rdb.sharding.constant.SQLType;
 import com.dangdang.ddframe.rdb.transaction.soft.constants.TransactionLogDataSourceType;
 import com.dangdang.ddframe.rdb.transaction.soft.datasource.TransactionLogDataSource;
 import com.dangdang.ddframe.rdb.transaction.soft.datasource.impl.MemoryTransactionLogDataSource;
@@ -76,12 +76,13 @@ public class SoftTransactionConfiguration {
      * 
      * @param dataSourceName 数据源名称
      * @return 事务管理器管理的数据库连接
+     * @throws SQLException SQL异常
      */
     public Connection getTargetConnection(final String dataSourceName) throws SQLException {
         if (!(targetDataSource instanceof ShardingDataSource)) {
             return targetDataSource.getConnection();
         }
-        return ((ShardingDataSource) targetDataSource).getConnection().getConnection(dataSourceName, SQLStatementType.SELECT);
+        return ((ShardingDataSource) targetDataSource).getConnection().getConnection(dataSourceName, SQLType.DQL);
     }
 
     /**

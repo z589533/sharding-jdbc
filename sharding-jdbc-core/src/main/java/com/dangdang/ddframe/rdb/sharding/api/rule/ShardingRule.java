@@ -22,21 +22,25 @@ import com.dangdang.ddframe.rdb.sharding.api.strategy.database.NoneDatabaseShard
 import com.dangdang.ddframe.rdb.sharding.api.strategy.table.NoneTableShardingAlgorithm;
 import com.dangdang.ddframe.rdb.sharding.api.strategy.table.TableShardingStrategy;
 import com.dangdang.ddframe.rdb.sharding.exception.ShardingJdbcException;
-import com.dangdang.ddframe.rdb.sharding.id.generator.IdGenerator;
+import com.dangdang.ddframe.rdb.sharding.keygen.DefaultKeyGenerator;
+import com.dangdang.ddframe.rdb.sharding.keygen.KeyGenerator;
+import com.dangdang.ddframe.rdb.sharding.keygen.KeyGeneratorFactory;
+import com.dangdang.ddframe.rdb.sharding.parsing.parser.context.condition.Column;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 分库分表规则配置对象.
+ * Databases and tables sharding rule configuration.
  * 
  * @author zhangliang
  */
@@ -53,19 +57,29 @@ public final class ShardingRule {
     
     private final TableShardingStrategy tableShardingStrategy;
     
+    @Getter(AccessLevel.NONE)
+    private final KeyGenerator keyGenerator;
+    
+    @Getter(AccessLevel.NONE)
+    private final KeyGenerator defaultGenerator;
+    
     /**
-     * 全属性构造器.
+     * Constructs a full properties sharding rule.
      * 
-     * <p>用于Spring非命名空间的配置.</p>
+     * <p>Should not use for spring namespace.</p>
      * 
-     * <p>未来将改为private权限, 不在对外公开, 不建议使用非Spring命名空间的配置.</p>
-     * 
-     * @deprecated 未来将改为private权限, 不在对外公开, 不建议使用非Spring命名空间的配置.
+     * @deprecated should be private
+     * @param dataSourceRule data source rule
+     * @param tableRules table rules
+     * @param bindingTableRules binding table rules
+     * @param databaseShardingStrategy default database sharding strategy
+     * @param tableShardingStrategy default table sharding strategy
+     * @param keyGenerator default primary key generator
      */
     @Deprecated
     public ShardingRule(
             final DataSourceRule dataSourceRule, final Collection<TableRule> tableRules, final Collection<BindingTableRule> bindingTableRules, 
-            final DatabaseShardingStrategy databaseShardingStrategy, final TableShardingStrategy tableShardingStrategy) {
+            final DatabaseShardingStrategy databaseShardingStrategy, final TableShardingStrategy tableShardingStrategy, final KeyGenerator keyGenerator) {
         Preconditions.checkNotNull(dataSourceRule);
         this.dataSourceRule = dataSourceRule;
         this.tableRules = null == tableRules ? Collections.<TableRule>emptyList() : tableRules;
@@ -74,22 +88,24 @@ public final class ShardingRule {
                 Collections.<String>emptyList(), new NoneDatabaseShardingAlgorithm()) : databaseShardingStrategy;
         this.tableShardingStrategy = null == tableShardingStrategy ? new TableShardingStrategy(
                 Collections.<String>emptyList(), new NoneTableShardingAlgorithm()) : tableShardingStrategy;
+        this.keyGenerator = keyGenerator;
+        defaultGenerator = KeyGeneratorFactory.createKeyGenerator(DefaultKeyGenerator.class);
     }
     
     /**
-     * 获取表规则配置对象构建器.
+     * Get sharding rule builder.
      *
-     * @return 分片规则配置对象构建器
+     * @return sharding rule builder
      */
     public static ShardingRuleBuilder builder() {
         return new ShardingRuleBuilder();
     }
     
     /**
-     * 试着根据逻辑表名称查找分片规则.
+     * Try to find table rule though logic table name.
      * 
-     * @param logicTableName 逻辑表名称
-     * @return 该逻辑表的分片规则
+     * @param logicTableName logic table name
+     * @return table rule
      */
     public Optional<TableRule> tryFindTableRule(final String logicTableName) {
         for (TableRule each : tableRules) {
@@ -101,62 +117,64 @@ public final class ShardingRule {
     }
     
     /**
-     * 根据逻辑表名找到指定分片规则.
-     * 
-     * @param logicTableName 逻辑表名称
-     * @return 该逻辑表的分片规则
+     * Find table rule though logic table name.
+     *
+     * @param logicTableName logic table name
+     * @return table rule
      */
-    public TableRule findTableRule(final String logicTableName) {
-        Optional<TableRule> tableRuleOptional = tryFindTableRule(logicTableName);
-        if (tableRuleOptional.isPresent()) {
-            return tableRuleOptional.get();
+    public TableRule getTableRule(final String logicTableName) {
+        Optional<TableRule> tableRule = tryFindTableRule(logicTableName);
+        if (tableRule.isPresent()) {
+            return tableRule.get();
         }
-        throw new ShardingJdbcException(String.format("%s does not exist in ShardingRule", logicTableName));
+        if (dataSourceRule.getDefaultDataSource().isPresent()) {
+            return createTableRuleWithDefaultDataSource(logicTableName, dataSourceRule);
+        }
+        throw new ShardingJdbcException("Cannot find table rule and default data source with logic table: '%s'", logicTableName);
+    }
+    
+    private TableRule createTableRuleWithDefaultDataSource(final String logicTableName, final DataSourceRule defaultDataSourceRule) {
+        Map<String, DataSource> defaultDataSourceMap = new HashMap<>(1);
+        defaultDataSourceMap.put(defaultDataSourceRule.getDefaultDataSourceName(), defaultDataSourceRule.getDefaultDataSource().get());
+        return TableRule.builder(logicTableName)
+                .dataSourceRule(new DataSourceRule(defaultDataSourceMap))
+                .databaseShardingStrategy(new DatabaseShardingStrategy("", new NoneDatabaseShardingAlgorithm()))
+                .tableShardingStrategy(new TableShardingStrategy("", new NoneTableShardingAlgorithm())).build();
     }
     
     /**
-     * 获取数据库分片策略.
+     * Get database sharding strategy.
      * 
      * <p>
-     * 根据表规则配置对象获取分片策略, 如果获取不到则获取默认分片策略.
+     * Use default database sharding strategy if not found.
      * </p>
      * 
-     * @param tableRule 表规则配置对象
-     * @return 数据库分片策略
+     * @param tableRule table rule
+     * @return database sharding strategy
      */
     public DatabaseShardingStrategy getDatabaseShardingStrategy(final TableRule tableRule) {
-        DatabaseShardingStrategy result = tableRule.getDatabaseShardingStrategy();
-        if (null == result) {
-            result = databaseShardingStrategy;
-        }
-        Preconditions.checkNotNull(result, "no database sharding strategy");
-        return result;
+        return null == tableRule.getDatabaseShardingStrategy() ? databaseShardingStrategy : tableRule.getDatabaseShardingStrategy();
     }
     
     /**
-     * 获取表分片策略.
+     * Get table sharding strategy.
      * 
      * <p>
-     * 根据表规则配置对象获取分片策略, 如果获取不到则获取默认分片策略.
+     * Use default table sharding strategy if not found.
      * </p>
      * 
-     * @param tableRule 表规则配置对象
-     * @return 表分片策略
+     * @param tableRule table rule
+     * @return table sharding strategy
      */
     public TableShardingStrategy getTableShardingStrategy(final TableRule tableRule) {
-        TableShardingStrategy result = tableRule.getTableShardingStrategy();
-        if (null == result) {
-            result = tableShardingStrategy;
-        }
-        Preconditions.checkNotNull(result, "no table sharding strategy");
-        return result;
+        return null == tableRule.getTableShardingStrategy() ? tableShardingStrategy : tableRule.getTableShardingStrategy();
     }
     
     /**
-     * 判断逻辑表名称集合是否全部属于Binding表.
+     * Adjust logic tables is all belong to binding tables.
      *
-     * @param logicTables 逻辑表名称集合
-     * @return 是否全部属于Binding表
+     * @param logicTables names of logic tables
+     * @return logic tables is all belong to binding tables or not
      */
     public boolean isAllBindingTables(final Collection<String> logicTables) {
         Collection<String> bindingTables = filterAllBindingTables(logicTables);
@@ -164,10 +182,10 @@ public final class ShardingRule {
     }
     
     /**
-     * 过滤出所有的Binding表名称.
+     * Filter all binding tables.
      * 
-     * @param logicTables 逻辑表名称集合
-     * @return 所有的Binding表名称集合
+     * @param logicTables names of logic tables
+     * @return names for filtered binding tables
      */
     public Collection<String> filterAllBindingTables(final Collection<String> logicTables) {
         if (logicTables.isEmpty()) {
@@ -193,10 +211,10 @@ public final class ShardingRule {
     }
     
     /**
-     * 根据逻辑表名称获取binding表配置的逻辑表名称集合.
+     * Get binding table rule via logic table name.
      *
-     * @param logicTable 逻辑表名称
-     * @return binding表配置的逻辑表名称集合
+     * @param logicTable logic table name
+     * @return binding table rule
      */
     public Optional<BindingTableRule> findBindingTableRule(final String logicTable) {
         for (BindingTableRule each : bindingTableRules) {
@@ -208,47 +226,66 @@ public final class ShardingRule {
     }
     
     /**
-     * 获取所有的分片列名.
+     * Adjust is sharding column or not.
      *
-     * @param tableName 表名
-     * @return 分片列名集合
+     * @param column column object
+     * @return is sharding column or not
      */
-    public Collection<String> getAllShardingColumns(final String tableName) {
-        Set<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        result.addAll(databaseShardingStrategy.getShardingColumns());
-        result.addAll(tableShardingStrategy.getShardingColumns());
+    public boolean isShardingColumn(final Column column) {
+        if (databaseShardingStrategy.getShardingColumns().contains(column.getName()) || tableShardingStrategy.getShardingColumns().contains(column.getName())) {
+            return true;
+        }
         for (TableRule each : tableRules) {
-            if (!each.getLogicTable().equalsIgnoreCase(tableName)) {
+            if (!each.getLogicTable().equalsIgnoreCase(column.getTableName())) {
                 continue;
             }
-            if (null != each.getDatabaseShardingStrategy()) {
-                result.addAll(each.getDatabaseShardingStrategy().getShardingColumns());
+            if (null != each.getDatabaseShardingStrategy() && each.getDatabaseShardingStrategy().getShardingColumns().contains(column.getName())) {
+                return true;
             }
-            if (null != each.getTableShardingStrategy()) {
-                result.addAll(each.getTableShardingStrategy().getShardingColumns());
+            if (null != each.getTableShardingStrategy() && each.getTableShardingStrategy().getShardingColumns().contains(column.getName())) {
+                return true;
             }
         }
-        return result;
+        return false;
     }
     
     /**
-     * 获取所有需要自增的列名.
+     * get generated key's column name.
      * 
-     * @param tableName 表名
-     * @return 自增列
+     * @param logicTableName logic table name
+     * @return generated key's column name
      */
-    public Collection<String> getAutoIncrementColumns(final String tableName) {
+    public Optional<String> getGenerateKeyColumn(final String logicTableName) {
         for (TableRule each : tableRules) {
-            if (!each.getLogicTable().equalsIgnoreCase(tableName)) {
-                continue;
+            if (each.getLogicTable().equalsIgnoreCase(logicTableName)) {
+                return Optional.fromNullable(each.getGenerateKeyColumn());
             }
-            return Sets.newLinkedHashSet(each.getAutoIncrementColumnMap().keySet());
         }
-        return Collections.emptySet();
+        return Optional.absent();
     }
     
     /**
-     * 分片规则配置对象构建器.
+     * Generate key.
+     *
+     * @param logicTableName logic table name
+     * @return generated key
+     */
+    public Number generateKey(final String logicTableName) {
+        Optional<TableRule> tableRule = tryFindTableRule(logicTableName);
+        if (!tableRule.isPresent()) {
+            throw new ShardingJdbcException("Cannot find strategy for generate keys.");
+        }
+        if (null != tableRule.get().getKeyGenerator()) {
+            return tableRule.get().getKeyGenerator().generateKey();
+        }
+        if (null != keyGenerator) {
+            return keyGenerator.generateKey();
+        }
+        return defaultGenerator.generateKey();
+    }
+    
+    /**
+     * Sharding rule builder.
      */
     @RequiredArgsConstructor
     public static class ShardingRuleBuilder {
@@ -263,13 +300,13 @@ public final class ShardingRule {
         
         private TableShardingStrategy tableShardingStrategy;
         
-        private Class<? extends IdGenerator> idGeneratorClass;
+        private Class<? extends KeyGenerator> keyGeneratorClass;
         
         /**
-         * 构建数据源配置规则.
+         * Build data source rule.
          *
-         * @param dataSourceRule 数据源配置规则
-         * @return 分片规则配置对象构建器
+         * @param dataSourceRule data source rule
+         * @return this builder
          */
         public ShardingRuleBuilder dataSourceRule(final DataSourceRule dataSourceRule) {
             this.dataSourceRule = dataSourceRule;
@@ -277,10 +314,10 @@ public final class ShardingRule {
         }
         
         /**
-         * 构建表配置规则.
+         * Build table rules.
          *
-         * @param tableRules 表配置规则
-         * @return 分片规则配置对象构建器
+         * @param tableRules table rules
+         * @return this builder
          */
         public ShardingRuleBuilder tableRules(final Collection<TableRule> tableRules) {
             this.tableRules = tableRules;
@@ -288,10 +325,10 @@ public final class ShardingRule {
         }
         
         /**
-         * 构建绑定表配置规则.
+         * Build binding table rules.
          *
-         * @param bindingTableRules 绑定表配置规则
-         * @return 分片规则配置对象构建器
+         * @param bindingTableRules binding table rules
+         * @return this builder
          */
         public ShardingRuleBuilder bindingTableRules(final Collection<BindingTableRule> bindingTableRules) {
             this.bindingTableRules = bindingTableRules;
@@ -299,10 +336,10 @@ public final class ShardingRule {
         }
         
         /**
-         * 构建默认分库策略.
+         * Build default database strategy.
          *
-         * @param databaseShardingStrategy 默认分库策略
-         * @return 分片规则配置对象构建器
+         * @param databaseShardingStrategy default database strategy
+         * @return this builder
          */
         public ShardingRuleBuilder databaseShardingStrategy(final DatabaseShardingStrategy databaseShardingStrategy) {
             this.databaseShardingStrategy = databaseShardingStrategy;
@@ -310,10 +347,10 @@ public final class ShardingRule {
         }
         
         /**
-         * 构建数据源分片规则.
+         * Build default table strategy.
          *
-         * @param tableShardingStrategy 默认分表策略
-         * @return 分片规则配置对象构建器
+         * @param tableShardingStrategy default table strategy
+         * @return this builder
          */
         public ShardingRuleBuilder tableShardingStrategy(final TableShardingStrategy tableShardingStrategy) {
             this.tableShardingStrategy = tableShardingStrategy;
@@ -321,30 +358,27 @@ public final class ShardingRule {
         }
     
         /**
-         * 构建默认id生成器.
+         * Build default key generator class.
          * 
-         * @param idGeneratorClass 默认的Id生成器
-         * @return 分片规则配置对象构建器
+         * @param keyGeneratorClass key generator class
+         * @return this builder
          */
-        public ShardingRuleBuilder idGenerator(final Class<? extends IdGenerator> idGeneratorClass) {
-            this.idGeneratorClass = idGeneratorClass;
+        public ShardingRuleBuilder keyGenerator(final Class<? extends KeyGenerator> keyGeneratorClass) {
+            this.keyGeneratorClass = keyGeneratorClass;
             return this;
         }
         
         /**
-         * 构建分片规则配置对象.
+         * Build sharding rule.
          *
-         * @return 分片规则配置对象
+         * @return built sharding rule
          */
         public ShardingRule build() {
-            ShardingRule result = new ShardingRule(dataSourceRule, tableRules, bindingTableRules, databaseShardingStrategy, tableShardingStrategy);
-            if (null == idGeneratorClass) {
-                return result;
+            KeyGenerator keyGenerator = null;
+            if (null != keyGeneratorClass) {
+                keyGenerator = KeyGeneratorFactory.createKeyGenerator(keyGeneratorClass);
             }
-            for (TableRule each : tableRules) {
-                each.fillIdGenerator(idGeneratorClass);
-            }
-            return result;
+            return new ShardingRule(dataSourceRule, tableRules, bindingTableRules, databaseShardingStrategy, tableShardingStrategy, keyGenerator);
         }
     }
 }

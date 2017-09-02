@@ -18,10 +18,12 @@ next = "/01-start/stress-test"
 未配置逻辑表和真实表对应关系的真实表，称为动态表。凡是动态表且未在SQL或Hint中包含分片键的SQL均不支持。
 原因是未找到分片键则需全路由，但由于未配置逻辑表和真实表的对应关系，无法全路由。
 
-### 除DQL和DML以外的语句
-Sharding-JDBC定位于CRUD操作，目前仅针对DQL和DML语句进行支持。
+### 有限支持子查询
+子查询支持详情请参考[分页及子查询](/02-guide/subquery/)。
 
-### 子查询未详细测试
+### 不支持包含冗余括号的SQL
+
+### 不支持OR
 
 ## 支持的SQL
 
@@ -61,28 +63,24 @@ table_reference ([INNER] | {LEFT|RIGHT} [OUTER]) JOIN table_factor [JOIN ON cond
 | SELECT * FROM tbl_name WHERE col1 = val1 ORDER BY col2 DESC LIMIT limit                                 | 是        |         |
 | SELECT COUNT(*), SUM(col1), MIN(col1), MAX(col1), AVG(col1) FROM tbl_name WHERE col1 = val1             | 是        |         |
 | SELECT COUNT(col1) FROM tbl_name WHERE col2 = val2 GROUP BY col1 ORDER BY col3 DESC LIMIT offset, limit | 是        |         |
-| SELECT * FROM tbl_name WHERE col1 = val1 OR col2 = val2                                                 | 是        |         |
 
 ### DML
-
-#### INSERT
 
 | SQL                                                           | 无条件支持 | 必要条件            |
 | ------------------------------------------------------------- | --------- | ------------------ |
 | INSERT INTO tbl_name (col1, col2,...) VALUES (val1, val2,....)| 否      | 插入列需要包含分片键  |
 | INSERT INTO tbl_name VALUES (val1, val2,....)                 | 否      | 通过Hint注入分片键 |
-
-#### UPDATE
-
-| SQL                                                           | 无条件支持 | 必要条件             |
-| ------------------------------------------------------------- | --------- | ------------------ |
 | UPDATE tbl_name SET col1 = val1 WHERE col2 = val2             | 是        |                    |
-
-#### DELETE
-
-| SQL                                                           | 无条件支持 | 必要条件             |
-| ------------------------------------------------------------- | --------- | ------------------ |
 | DELETE FROM tbl_name WHERE col1 = val1                        | 是        |                    |
+
+### DDL
+
+| SQL                                                           | 无条件支持 | 必要条件            |
+| ------------------------------------------------------------- | --------- | ------------------ |
+| CREATE TABLE tbl_name (col1 int,...)                          | 是        |                    |
+| ALTER TABLE tbl_name ADD col1 varchar(10)                     | 是        |                    |
+| DROP TABLE tbl_name                                           | 是        |                    |
+| TRUNCATE TABLE tbl_name                                       | 是        |                    |
 
 ## 不支持的SQL
 
@@ -92,6 +90,8 @@ table_reference ([INNER] | {LEFT|RIGHT} [OUTER]) JOIN table_factor [JOIN ON cond
 | INSERT INTO tbl_name (col1, col2, ...) SELECT col1, col2, ... FROM tbl_name WHERE col3 = val3 |
 | INSERT INTO tbl_name SET col1 = val1                                                          |
 | SELECT DISTINCT * FROM tbl_name WHERE column1 = value1                                        |
+| SELECT * FROM tbl_name WHERE column1 = value1 OR column1 = value2                             |
 | SELECT COUNT(col1) as count_alias FROM tbl_name GROUP BY col1 HAVING count_alias > val1       |
 | SELECT * FROM tbl_name1 UNION SELECT * FROM tbl_name2                                         |
 | SELECT * FROM tbl_name1 UNION ALL SELECT * FROM tbl_name2                                     |
+| SELECT * FROM tbl_name1 WHERE (val1=?) AND (val1=?)                                           |

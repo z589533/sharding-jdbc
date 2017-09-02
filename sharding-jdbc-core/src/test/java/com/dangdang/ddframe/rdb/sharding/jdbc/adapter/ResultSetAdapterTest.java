@@ -17,11 +17,10 @@
 
 package com.dangdang.ddframe.rdb.sharding.jdbc.adapter;
 
-import com.dangdang.ddframe.rdb.integrate.AbstractDBUnitTest;
-import com.dangdang.ddframe.rdb.integrate.db.AbstractShardingDataBasesOnlyDBUnitTest;
-import com.dangdang.ddframe.rdb.sharding.constants.DatabaseType;
-import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingConnection;
-import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingDataSource;
+import com.dangdang.ddframe.rdb.common.base.AbstractShardingJDBCDatabaseAndTableTest;
+import com.dangdang.ddframe.rdb.sharding.constant.DatabaseType;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.connection.ShardingConnection;
+import com.dangdang.ddframe.rdb.sharding.jdbc.util.JDBCTestSQL;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +28,12 @@ import org.junit.Test;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import static com.dangdang.ddframe.rdb.sharding.constant.DatabaseType.Oracle;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -37,112 +41,149 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public final class ResultSetAdapterTest extends AbstractShardingDataBasesOnlyDBUnitTest {
+public final class ResultSetAdapterTest extends AbstractShardingJDBCDatabaseAndTableTest {
     
-    private ShardingConnection shardingConnection;
+    private List<ShardingConnection> shardingConnections = new ArrayList<>();
     
-    private Statement statement;
+    private List<Statement> statements = new ArrayList<>();
     
-    private ResultSet actual;
+    private Map<DatabaseType, ResultSet> resultSets = new HashMap<>();
+    
+    public ResultSetAdapterTest(final DatabaseType databaseType) {
+        super(databaseType);
+    }
     
     @Before
     public void init() throws SQLException {
-        ShardingDataSource shardingDataSource = getShardingDataSource();
-        shardingConnection = shardingDataSource.getConnection();
-        statement = shardingConnection.createStatement();
-        actual = statement.executeQuery("SELECT user_id AS `uid` FROM `t_order` WHERE `status` = 'init'");
+        ShardingConnection shardingConnection = getShardingDataSource().getConnection();
+        shardingConnections.add(shardingConnection);
+        Statement statement = shardingConnection.createStatement();
+        statements.add(statement);
+        resultSets.put(getCurrentDatabaseType(), statement.executeQuery(JDBCTestSQL.SELECT_GROUP_BY_USER_ID_SQL));
     }
     
     @After
     public void close() throws SQLException {
-        actual.close();
-        statement.close();
-        shardingConnection.close();
+        for (ResultSet each : resultSets.values()) {
+            each.close();
+        }
+        for (Statement each : statements) {
+            each.close();
+        }
+        for (ShardingConnection each : shardingConnections) {
+            each.close();
+        }
     }
     
     @Test
     public void assertClose() throws SQLException {
-        actual.close();
-        assertClose((AbstractResultSetAdapter) actual);
+        for (Map.Entry<DatabaseType, ResultSet> each : resultSets.entrySet()) {
+            each.getValue().close();
+            assertClose((AbstractResultSetAdapter) each.getValue(), each.getKey());
+        }
     }
     
-    private void assertClose(final AbstractResultSetAdapter actual) throws SQLException {
+    private void assertClose(final AbstractResultSetAdapter actual, final DatabaseType type) throws SQLException {
         assertTrue(actual.isClosed());
-        assertThat(actual.getResultSets().size(), is(10));
-        for (ResultSet each : actual.getResultSets()) {
-            assertTrue(each.isClosed());
+        assertThat(actual.getResultSets().size(), is(4));
+        if (Oracle != type) {
+            for (ResultSet each : actual.getResultSets()) {
+                assertTrue(each.isClosed());
+            }
         }
     }
     
     @Test
     public void assertWasNull() throws SQLException {
-        assertFalse(actual.wasNull());
+        for (ResultSet each : resultSets.values()) {
+            assertFalse(each.wasNull());
+        }
     }
     
     @Test
     public void assertSetFetchDirection() throws SQLException {
-        assertThat(actual.getFetchDirection(), is(ResultSet.FETCH_FORWARD));
-        try {
-            actual.setFetchDirection(ResultSet.FETCH_REVERSE);
-        } catch (final SQLException ignore) {
+        for (Map.Entry<DatabaseType, ResultSet> each : resultSets.entrySet()) {
+            assertThat(each.getValue().getFetchDirection(), is(ResultSet.FETCH_FORWARD));
+            try {
+                each.getValue().setFetchDirection(ResultSet.FETCH_REVERSE);
+            } catch (final SQLException ignore) {
+            }
+            if (each.getKey() == DatabaseType.MySQL || each.getKey() == DatabaseType.PostgreSQL) {
+                assertFetchDirection((AbstractResultSetAdapter) each.getValue(), ResultSet.FETCH_REVERSE, each.getKey());
+            }
         }
-        assertFetchDirection((AbstractResultSetAdapter) actual, ResultSet.FETCH_REVERSE);
     }
     
-    private void assertFetchDirection(final AbstractResultSetAdapter actual, final int fetchDirection) throws SQLException {
+    private void assertFetchDirection(final AbstractResultSetAdapter actual, final int fetchDirection, final DatabaseType type) throws SQLException {
         // H2数据库未实现getFetchDirection方法
-        assertThat(actual.getFetchDirection(), is(DatabaseType.H2 == AbstractDBUnitTest.CURRENT_DB_TYPE ? ResultSet.FETCH_FORWARD : fetchDirection));
-        assertThat(actual.getResultSets().size(), is(10));
+        assertThat(actual.getFetchDirection(), is(DatabaseType.H2 == type || DatabaseType.PostgreSQL == type ? ResultSet.FETCH_FORWARD : fetchDirection));
+        assertThat(actual.getResultSets().size(), is(4));
         for (ResultSet each : actual.getResultSets()) {
-            assertThat(each.getFetchDirection(), is(DatabaseType.H2 == AbstractDBUnitTest.CURRENT_DB_TYPE ? ResultSet.FETCH_FORWARD : fetchDirection));
+            assertThat(each.getFetchDirection(), is(DatabaseType.H2 == type || DatabaseType.PostgreSQL == type ? ResultSet.FETCH_FORWARD : fetchDirection));
         }
     }
     
     @Test
     public void assertSetFetchSize() throws SQLException {
-        assertThat(actual.getFetchSize(), is(0));
-        actual.setFetchSize(100);
-        assertFetchSize((AbstractResultSetAdapter) actual, 100);
+        for (Map.Entry<DatabaseType, ResultSet> each : resultSets.entrySet()) {
+            if (DatabaseType.MySQL == each.getKey() || DatabaseType.PostgreSQL == each.getKey()) {
+                assertThat(each.getValue().getFetchSize(), is(0));
+            }
+            each.getValue().setFetchSize(100);
+            assertFetchSize((AbstractResultSetAdapter) each.getValue(), each.getKey());
+        }
     }
     
-    private void assertFetchSize(final AbstractResultSetAdapter actual, final int fetchSize) throws SQLException {
+    private void assertFetchSize(final AbstractResultSetAdapter actual, final DatabaseType type) throws SQLException {
         // H2数据库未实现getFetchSize方法
-        assertThat(actual.getFetchSize(), is(DatabaseType.H2 == AbstractDBUnitTest.CURRENT_DB_TYPE ? 0 : fetchSize));
-        assertThat(actual.getResultSets().size(), is(10));
+        assertThat(actual.getFetchSize(), is(DatabaseType.H2 == type ? 0 : 100));
+        assertThat(actual.getResultSets().size(), is(4));
         for (ResultSet each : actual.getResultSets()) {
-            assertThat(each.getFetchSize(), is(DatabaseType.H2 == AbstractDBUnitTest.CURRENT_DB_TYPE ? 0 : fetchSize));
+            assertThat(each.getFetchSize(), is(DatabaseType.H2 == type ? 0 : 100));
         }
     }
     
     @Test
     public void assertGetType() throws SQLException {
-        assertThat(actual.getType(), is(ResultSet.TYPE_FORWARD_ONLY));
+        for (ResultSet each : resultSets.values()) {
+            assertThat(each.getType(), is(ResultSet.TYPE_FORWARD_ONLY));
+        }
     }
     
     @Test
     public void assertGetConcurrency() throws SQLException {
-        assertThat(actual.getConcurrency(), is(ResultSet.CONCUR_READ_ONLY));
+        for (ResultSet each : resultSets.values()) {
+            assertThat(each.getConcurrency(), is(ResultSet.CONCUR_READ_ONLY));
+        }
     }
     
     @Test
     public void assertGetStatement() throws SQLException {
-        assertNotNull(actual.getStatement());
+        for (ResultSet each : resultSets.values()) {
+            assertNotNull(each.getStatement());
+        }
     }
     
     @Test
     public void assertClearWarnings() throws SQLException {
-        assertNull(actual.getWarnings());
-        actual.clearWarnings();
-        assertNull(actual.getWarnings());
+        for (ResultSet each : resultSets.values()) {
+            assertNull(each.getWarnings());
+            each.clearWarnings();
+            assertNull(each.getWarnings());
+        }
     }
     
     @Test
     public void assertGetMetaData() throws SQLException {
-        assertNotNull(actual.getMetaData());
+        for (ResultSet each : resultSets.values()) {
+            assertNotNull(each.getMetaData());
+        }
     }
     
     @Test
     public void assertFindColumn() throws SQLException {
-        assertThat(actual.findColumn("uid"), is(1));
+        for (Map.Entry<DatabaseType, ResultSet> each : resultSets.entrySet()) {
+            assertThat(each.getValue().findColumn("user_id"), is(1));
+        }
     }
 }

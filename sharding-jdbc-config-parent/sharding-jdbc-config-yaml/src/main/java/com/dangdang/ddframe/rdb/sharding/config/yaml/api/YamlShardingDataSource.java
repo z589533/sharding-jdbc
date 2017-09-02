@@ -19,11 +19,12 @@ package com.dangdang.ddframe.rdb.sharding.config.yaml.api;
 
 import com.dangdang.ddframe.rdb.sharding.config.common.api.ShardingRuleBuilder;
 import com.dangdang.ddframe.rdb.sharding.config.yaml.internel.YamlConfig;
-import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingDataSource;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.datasource.ShardingDataSource;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
 import javax.sql.DataSource;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -44,13 +45,22 @@ public class YamlShardingDataSource extends ShardingDataSource {
     public YamlShardingDataSource(final Map<String, DataSource> dataSource, final File yamlFile) throws IOException {
         super(new ShardingRuleBuilder(yamlFile.getName(), dataSource, unmarshal(yamlFile)).build(), unmarshal(yamlFile).getProps());
     }
-    
+
+    public YamlShardingDataSource(final String logRoot, final byte[] yamlByteArray) throws IOException {
+        super(new ShardingRuleBuilder(logRoot, unmarshal(yamlByteArray)).build(), unmarshal(yamlByteArray).getProps());
+    }
+
     private static YamlConfig unmarshal(final File yamlFile) throws IOException {
         try (
                 FileInputStream fileInputStream = new FileInputStream(yamlFile);
                 InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream, "UTF-8")
-            ) {
+        ) {
             return new Yaml(new Constructor(YamlConfig.class)).loadAs(inputStreamReader, YamlConfig.class);
         }
+    }
+
+    private static YamlConfig unmarshal(final byte[] yamlByteArray) throws IOException {
+        return new Yaml(new Constructor(YamlConfig.class)).loadAs(new ByteArrayInputStream(yamlByteArray), YamlConfig.class);
+
     }
 }

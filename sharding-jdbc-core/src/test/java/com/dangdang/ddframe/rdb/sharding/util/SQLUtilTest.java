@@ -17,11 +17,9 @@
 
 package com.dangdang.ddframe.rdb.sharding.util;
 
-import com.dangdang.ddframe.rdb.sharding.exception.SQLParserException;
-import com.dangdang.ddframe.rdb.sharding.parser.result.router.SQLStatementType;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 public class SQLUtilTest {
@@ -32,18 +30,5 @@ public class SQLUtilTest {
         assertThat(SQLUtil.getExactlyValue("[xxx]"), is("xxx"));
         assertThat(SQLUtil.getExactlyValue("\"xxx\""), is("xxx"));
         assertThat(SQLUtil.getExactlyValue("'xxx'"), is("xxx"));
-    }
-    
-    @Test
-    public void assertSQLType() {
-        assertThat(SQLUtil.getTypeByStart(" /*COMMENT*/  \t \n  \r \fsElecT\t\n  * from table  "), is(SQLStatementType.SELECT));
-        assertThat(SQLUtil.getTypeByStart(" - - COMMENT  \t \n  \r \fInsert\t\n  into table  "), is(SQLStatementType.INSERT));
-        assertThat(SQLUtil.getTypeByStart(" /*+ HINT SELECT * FROM TT*/  \t \n  \r \fuPdAte\t\n  table  "), is(SQLStatementType.UPDATE));
-        assertThat(SQLUtil.getTypeByStart(" /*+ HINT SELECT * FROM TT*/  \t \n  \r \fdelete\t\n  table  "), is(SQLStatementType.DELETE));
-    }
-    
-    @Test(expected = SQLParserException.class)
-    public void assertNoSQL() {
-        SQLUtil.getTypeByStart("int i = 0");
     }
 }

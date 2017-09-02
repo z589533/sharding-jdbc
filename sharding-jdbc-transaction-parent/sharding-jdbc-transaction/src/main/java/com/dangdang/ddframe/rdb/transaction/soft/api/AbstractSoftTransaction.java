@@ -17,8 +17,8 @@
 
 package com.dangdang.ddframe.rdb.transaction.soft.api;
 
-import com.dangdang.ddframe.rdb.sharding.executor.ExecutorExceptionHandler;
-import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingConnection;
+import com.dangdang.ddframe.rdb.sharding.executor.threadlocal.ExecutorExceptionHandler;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.connection.ShardingConnection;
 import com.dangdang.ddframe.rdb.transaction.soft.constants.SoftTransactionType;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
@@ -59,6 +59,8 @@ public abstract class AbstractSoftTransaction {
     
     /**
      * 结束柔性事务.
+     * 
+     * @throws SQLException SQL异常
      */
     public final void end() throws SQLException {
         if (connection != null) {

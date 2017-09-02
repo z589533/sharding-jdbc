@@ -17,14 +17,14 @@
 
 package com.dangdang.ddframe.rdb.sharding.jdbc.unsupported;
 
+import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.WrapperAdapter;
+
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 
-import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.WrapperAdapter;
-
 /**
- * 声明不支持操作的静态语句对象.
+ * Unsupported {@code Statement} methods.
  * 
  * @author gaohongtao
  */

@@ -17,11 +17,11 @@
 
 package com.dangdang.ddframe.rdb.transaction.soft.base;
 
-import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingDataSource;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.datasource.ShardingDataSource;
 import com.dangdang.ddframe.rdb.sharding.api.rule.DataSourceRule;
 import com.dangdang.ddframe.rdb.sharding.api.rule.ShardingRule;
 import com.dangdang.ddframe.rdb.sharding.api.rule.TableRule;
-import com.dangdang.ddframe.rdb.sharding.parser.result.router.SQLStatementType;
+import com.dangdang.ddframe.rdb.sharding.constant.SQLType;
 import com.google.common.collect.Lists;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -47,7 +47,7 @@ public abstract class AbstractSoftTransactionIntegrationTest {
         prepareEnv();
     }
     
-    private void prepareEnv() throws SQLException {
+    private void prepareEnv() {
         DataSourceRule dataSourceRule = new DataSourceRule(createDataSourceMap());
         TableRule tableRule = TableRule.builder("transaction_test").dataSourceRule(dataSourceRule).build();
         ShardingRule shardingRule = ShardingRule.builder().dataSourceRule(dataSourceRule).tableRules(Lists.newArrayList(tableRule)).build();
@@ -79,12 +79,12 @@ public abstract class AbstractSoftTransactionIntegrationTest {
         return result;
     }
     
-    private void createTable(final ShardingDataSource shardingDataSource) throws SQLException {
+    private void createTable(final ShardingDataSource shardingDataSource) {
         String dbSchema = "CREATE TABLE IF NOT EXISTS `transaction_test` ("
             + "`id` int NOT NULL, "
             + "PRIMARY KEY (`id`));";
         try (
-                Connection conn = shardingDataSource.getConnection().getConnection("db_trans", SQLStatementType.SELECT);
+                Connection conn = shardingDataSource.getConnection().getConnection("db_trans", SQLType.DQL);
                 PreparedStatement preparedStatement = conn.prepareStatement(dbSchema)) {
             preparedStatement.executeUpdate();
         } catch (final SQLException e) {

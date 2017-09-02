@@ -3,8 +3,8 @@ toc = true
 date = "2016-12-06T22:38:50+08:00"
 title = "分库分表"
 weight = 2
-prev = "/02-guide/concepts"
-next = "/02-guide/master-slave"
+prev = "/02-guide/concepts/"
+next = "/02-guide/master-slave/"
 
 +++
 
@@ -87,7 +87,7 @@ select * from db0.t_order_0 where user_id = ? and order_id = ?;
         .dataSourceRule(dataSourceRule)
         .tableRules(Arrays.asList(orderTableRule, orderItemTableRule))
         .databaseShardingStrategy(new DatabaseShardingStrategy("user_id", new ModuloDatabaseShardingAlgorithm()))
-        .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm())))
+        .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm()))
         .build();
 ```
 ## 数据源配置
@@ -137,38 +137,38 @@ Sharding-JDBC认为对于分片策略存有两种维度
 ```java
   //使用了默认策略配置
   TableRule orderTableRule = TableRule.builder("t_order")
-          .actualTables(Arrays.asList("t_order_0", "t_order_1")
+          .actualTables(Arrays.asList("t_order_0", "t_order_1"))
           .dataSourceRule(dataSourceRule)
           .build();
   TableRule orderItemTableRule = TableRule.builder("t_order_item")
-            .actualTables(Arrays.asList("t_order_item_0", "t_order_item_1")
+            .actualTables(Arrays.asList("t_order_item_0", "t_order_item_1"))
             .dataSourceRule(dataSourceRule)
             .build();
   ShardingRule shardingRule = ShardingRule.builder()
             .dataSourceRule(dataSourceRule)
             .tableRules(Arrays.asList(orderTableRule, orderItemTableRule))
             .databaseShardingStrategy(new DatabaseShardingStrategy("user_id", new ModuloDatabaseShardingAlgorithm()))
-            .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm())))
+            .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm()))
             .build();
 ```
 
 ```java
   //未使用默认策略配置
   TableRule orderTableRule = TableRule.builder("t_order")
-          .actualTables(Arrays.asList("t_order_0", "t_order_1")
+          .actualTables(Arrays.asList("t_order_0", "t_order_1"))
           .dataSourceRule(dataSourceRule)
           .build();
   TableRule orderItemTableRule = TableRule.builder("t_order_item")
-            .actualTables(Arrays.asList("t_order_item_0", "t_order_item_1")
+            .actualTables(Arrays.asList("t_order_item_0", "t_order_item_1"))
             .dataSourceRule(dataSourceRule)
             .databaseShardingStrategy(new DatabaseShardingStrategy("user_id", new ModuloDatabaseShardingAlgorithm()))
-            .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm())))
+            .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm()))
             .build();
   ShardingRule shardingRule = ShardingRule.builder()
             .dataSourceRule(dataSourceRule)
             .tableRules(Arrays.asList(orderTableRule, orderItemTableRule))
             .databaseShardingStrategy(new DatabaseShardingStrategy("user_id", new ModuloDatabaseShardingAlgorithm()))
-            .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm())))
+            .tableShardingStrategy(new TableShardingStrategy("order_id", new ModuloTableShardingAlgorithm()))
             .build();
 ```
 
@@ -385,7 +385,7 @@ public final class MultipleKeysModuloTableShardingAlgorithm implements MultipleK
 ## 构造ShardingDataSource
 完成规则配置后，我们可以通过ShardingDataSourceFactory工厂得到ShardingDataSource
 ```java
-DataSource dataSource = new ShardingDataSourceFactory.createDataSource(shardingRule);
+DataSource dataSource = ShardingDataSourceFactory.createDataSource(shardingRule);
 ```
 
 ## 使用ShardingDataSource

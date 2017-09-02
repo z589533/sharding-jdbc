@@ -40,10 +40,11 @@ Sharding-JDBC暂时未支持不常用的JDBC方法。
 
 ## SQL语句限制
 
-###  不支持DDL语句
-###  不支持子语句
-###  不支持UNION 和 UNION ALL
+###  有限支持子查询
+###  不支持HAVING
+###  不支持OR，UNION 和 UNION ALL
 ###  不支持特殊INSERT
 每条INSERT语句只能插入一条数据，不支持VALUES后有多行数据的语句
 ###  不支持DISTINCT聚合
 ###  不支持dual虚拟表
+###  不支持SELECT LAST_INSERT_ID()

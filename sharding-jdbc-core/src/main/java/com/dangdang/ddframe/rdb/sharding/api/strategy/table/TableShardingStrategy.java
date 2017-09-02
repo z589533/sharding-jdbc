@@ -17,12 +17,12 @@
 
 package com.dangdang.ddframe.rdb.sharding.api.strategy.table;
 
+import com.dangdang.ddframe.rdb.sharding.routing.strategy.ShardingStrategy;
+
 import java.util.Collection;
 
-import com.dangdang.ddframe.rdb.sharding.router.strategy.ShardingStrategy;
-
 /**
- * 分表策略.
+ * Table sharding strategy.
  * 
  * @author zhangliang
  */

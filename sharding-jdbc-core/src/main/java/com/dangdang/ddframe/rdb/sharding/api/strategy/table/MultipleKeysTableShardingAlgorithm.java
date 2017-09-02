@@ -17,10 +17,10 @@
 
 package com.dangdang.ddframe.rdb.sharding.api.strategy.table;
 
-import com.dangdang.ddframe.rdb.sharding.router.strategy.MultipleKeysShardingAlgorithm;
+import com.dangdang.ddframe.rdb.sharding.routing.strategy.MultipleKeysShardingAlgorithm;
 
 /**
- * 多片键分表算法接口.
+ * Table sharding algorithm for multiple sharding keys interface.
  * 
  * @author zhangliang
  */

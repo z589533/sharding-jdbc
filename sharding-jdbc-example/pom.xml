@@ -2,19 +2,18 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.dangdang</groupId>
     <artifactId>sharding-jdbc-example</artifactId>
-    <version>1.4.2</version>
+    <version>1.5.2</version>
     <packaging>pom</packaging>
     
     <modules>
         <module>sharding-jdbc-example-jdbc</module>
         <module>sharding-jdbc-example-mybatis</module>
         <module>sharding-jdbc-example-jpa</module>
-        <module>sharding-jdbc-example-id-generator</module>
         <module>sharding-jdbc-example-config-yaml</module>
         <module>sharding-jdbc-example-config-spring</module>
-        <module>sharding-jdbc-example-jdbc-transaction</module>
-        <module>sharding-jdbc-example-jdbc-masterslave</module>
         <module>sharding-jdbc-example-config-spring-masterslave</module>
+        <module>sharding-jdbc-example-jdbc-masterslave</module>
+        <module>sharding-jdbc-example-jdbc-transaction</module>
     </modules>
     
     <properties>
@@ -23,10 +22,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.locale>zh_CN</project.build.locale>
         
-        <sharding-jdbc.version>1.4.2.0.M1</sharding-jdbc.version>
+        <sharding-jdbc.version>1.5.2</sharding-jdbc.version>
         
         <commons-dbcp.version>1.4</commons-dbcp.version>
         <mysql-connector-java.version>5.1.30</mysql-connector-java.version>
+        <postgresql.version>9.1-901-1.jdbc4</postgresql.version>
         <slf4j.version>1.7.7</slf4j.version>
         <logback.version>1.1.2</logback.version>
         
@@ -42,31 +42,8 @@
         <maven-source-plugin.version>2.4</maven-source-plugin.version>
         <javadocExecutable>${java.home}/../bin/javadoc</javadocExecutable>
     </properties>
-
-    <!-- 默认仓库地址 -->
-    <repositories>
-
-        <repository>
-            <id>bluepay</id>
-            <name>com.bluepay</name>
-            <url>http://192.168.4.216:8081/nexus/content/groups/public/</url>
-        </repository>
-
-
-        <repository>
-            <id>aliyun</id>
-            <name>com.aliyun</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
-        </repository>
-
-
-    </repositories>
-
-
+    
     <dependencies>
-
-
-
         <dependency>
             <groupId>com.dangdang</groupId>
             <artifactId>sharding-jdbc-core</artifactId>
@@ -88,11 +65,6 @@
             <version>${sharding-jdbc.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.dangdang</groupId>
-            <artifactId>sharding-jdbc-self-id-generator</artifactId>
-            <version>${sharding-jdbc.version}</version>
-        </dependency>
-        <dependency>
             <groupId>commons-dbcp</groupId>
             <artifactId>commons-dbcp</artifactId>
             <version>${commons-dbcp.version}</version>
@@ -103,18 +75,13 @@
             <version>${mysql-connector-java.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
@@ -126,17 +93,6 @@
     
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.dangdang</groupId>
-                <artifactId>sharding-jdbc-config-common</artifactId>
-                <version>${sharding-jdbc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.dangdang</groupId>
-                <artifactId>sharding-jdbc-transaction-storage</artifactId>
-                <version>1.4.2.0.M1</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.mybatis</groupId>
                 <artifactId>mybatis</artifactId>
@@ -194,11 +150,7 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-
-
-
-
+    
     <build>
         <plugins>
             <plugin>

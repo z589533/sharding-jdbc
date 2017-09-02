@@ -17,15 +17,14 @@
 
 package com.dangdang.ddframe.rdb.sharding.jdbc.unsupported;
 
+import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.WrapperAdapter;
+
+import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 
-import javax.sql.DataSource;
-
-import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.WrapperAdapter;
-
 /**
- * 声明不支持操作的数据源对象.
+ * Unsupported {@code Datasource} methods.
  * 
  * @author zhangliang
  */

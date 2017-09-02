@@ -17,66 +17,93 @@
 
 package com.dangdang.ddframe.rdb.sharding.jdbc.unsupported;
 
-import com.dangdang.ddframe.rdb.integrate.db.AbstractShardingDataBasesOnlyDBUnitTest;
-import com.dangdang.ddframe.rdb.sharding.jdbc.ShardingConnection;
+import com.dangdang.ddframe.rdb.common.base.AbstractShardingJDBCDatabaseAndTableTest;
+import com.dangdang.ddframe.rdb.sharding.constant.DatabaseType;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.connection.ShardingConnection;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
-public final class UnsupportedOperationStatementTest extends AbstractShardingDataBasesOnlyDBUnitTest {
+public final class UnsupportedOperationStatementTest extends AbstractShardingJDBCDatabaseAndTableTest {
     
-    private ShardingConnection shardingConnection;
+    private List<ShardingConnection> shardingConnections = new ArrayList<>();
     
-    private Statement actual;
+    private List<Statement> statements = new ArrayList<>();
+    
+    public UnsupportedOperationStatementTest(final DatabaseType databaseType) {
+        super(databaseType);
+    }
     
     @Before
     public void init() throws SQLException {
-        shardingConnection = getShardingDataSource().getConnection();
-        actual = shardingConnection.createStatement();
+        ShardingConnection connection = getShardingDataSource().getConnection();
+        shardingConnections.add(connection);
+        statements.add(connection.createStatement());
     }
     
     @After
     public void close() throws SQLException {
-        actual.close();
-        shardingConnection.close();
+        for (Statement each : statements) {
+            each.close();
+        }
+        for (ShardingConnection each : shardingConnections) {
+            each.close();
+        }
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertGetFetchDirection() throws SQLException {
-        actual.getFetchDirection();
+        for (Statement each : statements) {
+            each.getFetchDirection();
+        }
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertSetFetchDirection() throws SQLException {
-        actual.setFetchDirection(0);
+        for (Statement each : statements) {
+            each.setFetchDirection(ResultSet.FETCH_UNKNOWN);
+        }
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertAddBatch() throws SQLException {
-        actual.addBatch("");
+        for (Statement each : statements) {
+            each.addBatch("");
+        }
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertClearBatch() throws SQLException {
-        actual.clearBatch();
+        for (Statement each : statements) {
+            each.clearBatch();
+        }
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertExecuteBatch() throws SQLException {
-        actual.executeBatch();
+        for (Statement each : statements) {
+            each.executeBatch();
+        }
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertCloseOnCompletion() throws SQLException {
-        actual.closeOnCompletion();
+        for (Statement each : statements) {
+            each.closeOnCompletion();
+        }
     }
     
     @Test(expected = SQLFeatureNotSupportedException.class)
     public void assertIsCloseOnCompletion() throws SQLException {
-        actual.isCloseOnCompletion();
+        for (Statement each : statements) {
+            each.isCloseOnCompletion();
+        }
     }
 }
