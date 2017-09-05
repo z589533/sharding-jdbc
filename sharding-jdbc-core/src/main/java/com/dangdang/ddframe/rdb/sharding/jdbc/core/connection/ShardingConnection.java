@@ -22,9 +22,9 @@ import com.dangdang.ddframe.rdb.sharding.hint.HintManagerHolder;
 import com.dangdang.ddframe.rdb.sharding.jdbc.adapter.AbstractConnectionAdapter;
 import com.dangdang.ddframe.rdb.sharding.jdbc.core.ShardingContext;
 import com.dangdang.ddframe.rdb.sharding.jdbc.core.datasource.MasterSlaveDataSource;
+import com.dangdang.ddframe.rdb.sharding.jdbc.core.datasource.NamedDataSource;
 import com.dangdang.ddframe.rdb.sharding.jdbc.core.statement.ShardingPreparedStatement;
 import com.dangdang.ddframe.rdb.sharding.jdbc.core.statement.ShardingStatement;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +37,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 
 /**
  * Connection that support sharding.
@@ -52,8 +50,6 @@ public final class ShardingConnection extends AbstractConnectionAdapter {
     
     @Getter
     private final ShardingContext shardingContext;
-    
-    private final Map<String, Connection> cachedConnections = new HashMap<>();
     
     /**
      * Get all database connections via data source name. 
@@ -87,28 +83,26 @@ public final class ShardingConnection extends AbstractConnectionAdapter {
      * @throws SQLException SQL exception
      */
     public Connection getConnection(final String dataSourceName, final SQLType sqlType) throws SQLException {
-        Optional<Connection> connection = getCachedConnection(dataSourceName, sqlType);
-        if (connection.isPresent()) {
-            return connection.get();
+        if (getCachedConnections().containsKey(dataSourceName)) {
+            return getCachedConnections().get(dataSourceName);
         }
         DataSource dataSource = shardingContext.getShardingRule().getDataSourceRule().getDataSource(dataSourceName);
         Preconditions.checkState(null != dataSource, "Missing the rule of %s in DataSourceRule", dataSourceName);
         String realDataSourceName;
         if (dataSource instanceof MasterSlaveDataSource) {
-            dataSource = ((MasterSlaveDataSource) dataSource).getDataSource(sqlType).getDataSource();
-            realDataSourceName = MasterSlaveDataSource.getDataSourceName(dataSourceName, sqlType);
+            NamedDataSource namedDataSource = ((MasterSlaveDataSource) dataSource).getDataSource(sqlType);
+            realDataSourceName = namedDataSource.getName();
+            if (getCachedConnections().containsKey(realDataSourceName)) {
+                return getCachedConnections().get(realDataSourceName);
+            }
+            dataSource = namedDataSource.getDataSource();
         } else {
             realDataSourceName = dataSourceName;
         }
         Connection result = dataSource.getConnection();
-        cachedConnections.put(realDataSourceName, result);
+        getCachedConnections().put(realDataSourceName, result);
         replayMethodsInvocation(result);
         return result;
-    }
-    
-    private Optional<Connection> getCachedConnection(final String dataSourceName, final SQLType sqlType) {
-        String key = cachedConnections.containsKey(dataSourceName) ? dataSourceName : MasterSlaveDataSource.getDataSourceName(dataSourceName, sqlType);
-        return Optional.fromNullable(cachedConnections.get(key));
     }
     
     /**
@@ -117,7 +111,7 @@ public final class ShardingConnection extends AbstractConnectionAdapter {
      * @param connection to be released connection
      */
     public void release(final Connection connection) {
-        cachedConnections.values().remove(connection);
+        getCachedConnections().values().remove(connection);
         try {
             connection.close();
         } catch (final SQLException ignored) {
@@ -178,11 +172,6 @@ public final class ShardingConnection extends AbstractConnectionAdapter {
     @Override
     public Statement createStatement(final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability) throws SQLException {
         return new ShardingStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability);
-    }
-    
-    @Override
-    public Collection<Connection> getCachedConnections() throws SQLException {
-        return cachedConnections.values();
     }
     
     @Override
